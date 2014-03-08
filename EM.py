@@ -59,9 +59,9 @@ jj = range(n)
 
 m = 0 # Number of current step
 # Initial values TODO
-p_ast_m = np.array([1 / k for i in ii])
-alpha_ast_m = np.array([0.001,  0.002])
-beta_ast_m = np.array([0.00001,  0.000005])
+p_ast_m = [0.9, 0.1] # [1 / k for i in ii]
+alpha_ast_m =[0.2,  0.3]
+beta_ast_m = [0.0002,  0.0001]
 
 f_theta_m_x_i = lambda x, i: p_ast_m[i] * f(x, alpha_ast_m[i], scale = 1 / beta_ast_m[i])
 # print(f_theta_m_x_i(1, 0))
@@ -74,7 +74,11 @@ def f_theta_i_cond_x(i, x):
 	#print(i, x)
 	#print(f_theta_m_x_i(x, i))
 	#print(f_X_theta_x(x))
-    return f_theta_m_x_i(x, i) / f_X_theta_x(x)
+	try:
+		return f_theta_m_x_i(x, i) / f_X_theta_x(x)
+	except:
+		print(x, i, f_theta_m_x_i(x, i),  f_X_theta_x(x))
+		raise
 
 
 cursor = getData(tableName, startDateTime, n, precision)
@@ -82,9 +86,10 @@ cursor = getData(tableName, startDateTime, n, precision)
 for row in cursor:
 	moment = row[1]
 	print(moment)
-	x = row[2]
+	x = np.array(row[2])
 	assert len(x) == n # Make sure we have exactly n values
 	# print(x)
+	print(x.mean(),  x.var())
 	
 	m = 0
 	print('m', m)
@@ -96,18 +101,23 @@ for row in cursor:
 		g = [[f_theta_i_cond_x(i, x[j]) for j in jj] for i in ii]
 		g_sum = [sum([g[i][j] for j in jj]) for i in ii]
 		
-		p_ast_m1 = [1 / n * sum(g[i]) for i in ii]
-		alpha_ast_m1 = [sum([g[i][j] * x[j] for j in jj]) / g_sum[i] for i in ii]
-		beta_ast_m1 = [exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i] for i in ii)]
-
+		p_ast_m1 = [1 / n * g_sum[i] for i in ii]
 		print('p_ast_m1', p_ast_m1)
+		alpha_ast_m1 = [sum([g[i][j] * x[j] for j in jj]) / g_sum[i] for i in ii]
 		print('alpha_ast_m1', alpha_ast_m1)
+#        i = 0
+#        print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i] ))
+#        i = 1
+#        print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i] for i in ii))
+		beta_ast_m1 = [exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i]) for i in ii]
+
 		print('beta_ast_m1', beta_ast_m1)
 		
-		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
-		print('d', d)
-		if d < delta_theta:
-			break
+#        # TODO
+#		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
+#		print('d', d)
+#		if d < delta_theta:
+#			break
 		
 		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
 		print('d', d)
