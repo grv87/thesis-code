@@ -35,5 +35,8 @@ nosetests.xml
 .project
 .pydevproject
 
+# Eric
+_eric5project
+
 # Data
 *.CSV

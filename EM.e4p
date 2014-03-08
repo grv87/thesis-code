@@ -10,9 +10,9 @@
   <Version>0.1</Version>
   <Author>Василий Горохов-Апельсинов</Author>
   <Email>vasiliy.gorokhoff@yandex.ru</Email>
+  <Eol index="-1"/>
   <Sources>
     <Source>EM.py</Source>
-    <Source>__init__.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
