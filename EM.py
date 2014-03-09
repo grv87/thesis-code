@@ -44,7 +44,7 @@ precision = 3
 from common.get_data import getData
 
 import numpy as np
-from math import exp, log
+from math import exp, log as ln
 from scipy.stats import gamma # Gamma distribution
 from scipy.special import psi # Digamma function
 
@@ -54,19 +54,19 @@ x = None
 eps = None
 f = gamma.pdf
 
-ii = range(k)
-jj = range(n)
+k_underline = range(k)
+n_underline = range(n)
 
 m = 0 # Number of current step
 # Initial values TODO
-p_ast_m = [0.9, 0.1] # [1 / k for i in ii]
+p_ast_m = [0.9, 0.1] # [1 / k for i in k_underline]
 alpha_ast_m =[0.2,  0.3]
 beta_ast_m = [0.0002,  0.0001]
 
 f_theta_m_x_i = lambda x, i: p_ast_m[i] * f(x, alpha_ast_m[i], scale = 1 / beta_ast_m[i])
 # print(f_theta_m_x_i(1, 0))
 # print(f_theta_m_x_i(1, 1))
-f_X_theta_x = lambda x: sum([f_theta_m_x_i(x, i) for i in ii])
+f_X_theta_x = lambda x: sum([f_theta_m_x_i(x, i) for i in k_underline])
 #f_theta_i_cond_x = lambda i, x: f_theta_m_x_i(x, i) / f_X_theta_x(x)
 import warnings
 warnings.filterwarnings('error')
@@ -98,22 +98,22 @@ for row in cursor:
 	print('beta_ast_m', beta_ast_m)
 
 	while True:
-		g = [[f_theta_i_cond_x(i, x[j]) for j in jj] for i in ii]
-		g_sum = [sum([g[i][j] for j in jj]) for i in ii]
+		g = [[f_theta_i_cond_x(i, x[j]) for j in n_underline] for i in k_underline]
+		g_sum = [sum([g[i][j] for j in n_underline]) for i in k_underline]
 		
-		p_ast_m1 = [1 / n * g_sum[i] for i in ii]
+		p_ast_m1 = [1 / n * g_sum[i] for i in k_underline]
 		print('p_ast_m1', p_ast_m1)
-		alpha_ast_m1 = [sum([g[i][j] * x[j] for j in jj]) / g_sum[i] for i in ii]
+		alpha_ast_m1 = [sum([g[i][j] * x[j] for j in n_underline]) / g_sum[i] for i in k_underline]
 		print('alpha_ast_m1', alpha_ast_m1)
-#        i = 0
-#        print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i] ))
-#        i = 1
-#        print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i] for i in ii))
-		beta_ast_m1 = [exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * log(x[j]) for j in jj]) / g_sum[i]) for i in ii]
+#		i = 0
+#		print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i] ))
+#		i = 1
+#		print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i] for i in k_underline))
+		beta_ast_m1 = [exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i]) for i in k_underline]
 
 		print('beta_ast_m1', beta_ast_m1)
 		
-#        # TODO
+#		# TODO
 #		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
 #		print('d', d)
 #		if d < delta_theta:
