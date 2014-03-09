@@ -21,7 +21,8 @@
 # along with code for my bachelor's thesis.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# Requirements: PostgreSQL server, Python 3 (works with 3.3), psycopg2
+# Requirements: PostgreSQL instance (works with 9.2),
+#  Python 3 (works with 3.3), psycopg2
 
 
 # Data
