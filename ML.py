@@ -95,7 +95,7 @@ beta = lambda theta_tilde, i: theta_tilde[k * 2 - 1 + i]
 
 d = True
 # Negative logarithm of likelihood function
-def L_T(theta_tilde):
+def L_T_tilde(theta_tilde):
 	# try:
 		# TODO
 		# return -sum([ln(sum([p(theta_tilde, i) * f(x[j], alpha(theta_tilde, i), beta(theta_tilde, i)) for i in k_underline])) for j in n_underline])
@@ -111,7 +111,7 @@ def L_T(theta_tilde):
 		return -sum([ln(S[j]) for j in n_underline])
 	# except ValueError:
 		# return pos_inf
-def L_TwithGrad(theta_tilde, grad):
+def L_T_tildewithGrad(theta_tilde, grad):
 	# try:
 		Q = [[f(x[j], alpha(theta_tilde, i), beta(theta_tilde, i)) for j in n_underline] for i in k_underline]
 		R = [[p(theta_tilde, i) * Q[i][j] for j in n_underline] for i in k_underline]
@@ -123,7 +123,7 @@ def L_TwithGrad(theta_tilde, grad):
 		return -sum([ln(S[j]) for j in n_underline])
 	# except:
 		# return pos_inf
-def grad_L_T(theta_tilde):
+def grad_L_T_tilde(theta_tilde):
 	try:
 		Q = [[f(x[j], alpha(theta_tilde, i), beta(theta_tilde, i)) for j in n_underline] for i in k_underline]
 		R = [[p(theta_tilde, i) * Q[i][j] for j in n_underline] for i in k_underline]
@@ -135,7 +135,7 @@ def grad_L_T(theta_tilde):
 	except:
 		print(theta_tilde)
 		raise
-#opt.set_min_objective(L_TwithGrad)
+#opt.set_min_objective(L_T_tildewithGrad)
 
 # Constraints		
 # constraints = \
@@ -176,11 +176,11 @@ opt_ub = [1 for i in range(3 * k - 1)]
 # opt.set_ftol_abs(0.001)
 # opt.set_initial_step(0.1)
 
-# def L_Tconstrained(theta_tilde):
+# def L_T_tildeconstrained(theta_tilde):
 	# for constraint in constraints:
 		# if constraint['fun'](theta_tilde) <= 0:
 			# return pos_inf
-	# return L_T(theta_tilde)
+	# return L_T_tilde(theta_tilde)
 
 cursor = getData(tableName, startDateTime, n, precision)
 
@@ -203,17 +203,17 @@ for row in cursor:
 		[alpha_est for i in k_underline] + # alpha
 		[beta_est for i in k_underline]    # beta
 	)
-	print(L_T(theta_tilde))
+	print(L_T_tilde(theta_tilde))
 	theta_tilde = np.array(
 		[0.4] + # TODO                                        # p_tilde
 		[alpha_est ** (random() * 2) for i in k_underline] + # alpha
 		[beta_est ** (random() * 2) for i in k_underline]    # beta
 	)
-	print(theta_tilde, L_T(theta_tilde))
+	print(theta_tilde, L_T_tilde(theta_tilde))
 	
 	# print('COBYLA')
-	# print(L_T(theta_tilde))
-	# res = minimize(L_T, theta_tilde, method = 'COBYLA', constraints = constraints)
+	# print(L_T_tilde(theta_tilde))
+	# res = minimize(L_T_tilde, theta_tilde, method = 'COBYLA', constraints = constraints)
 	# print(res)
 	# assert isfinite(res.fun)
 	# theta_tilde = res.x
@@ -223,19 +223,19 @@ for row in cursor:
 	
 	# # NLopt
 	# theta_tilde = opt.optimize(theta_tilde)
-	# L_T_ast = opt.last_optimum_value()
-	# print(L_T_ast)
+	# L_T_tilde_ast = opt.last_optimum_value()
+	# print(L_T_tilde_ast)
 	# result = opt.last_optimize_result()
 	# print(result)
 	
 	# OpenOpt
-	opt_p = GLP(L_T, theta_tilde, df = grad_L_T, A = opt_A, b = opt_b, lb = opt_lb, ub = opt_ub)
+	opt_p = GLP(L_T_tilde, theta_tilde, df = grad_L_T_tilde, A = opt_A, b = opt_b, lb = opt_lb, ub = opt_ub)
 	res = opt_p.solve('de', maxNonSuccess = 32) # maxNonSuccess = round(exp(len(theta_tilde)))
 	print(res.xf, res.ff)
 	
 	# print('Basin-Hopping')
-	# print(L_Tconstrained(theta_tilde))
-	# res = basinhopping(L_Tconstrained, theta_tilde)
+	# print(L_T_tildeconstrained(theta_tilde))
+	# res = basinhopping(L_T_tildeconstrained, theta_tilde)
 	# print(res)
 	# assert isfinite(res.fun)
 	# theta_tilde = res.x
