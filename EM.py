@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding, utf-8 -*-
 
 # Оценка параметров смеси гамма-распределений по EM-алгоритму
@@ -22,7 +22,8 @@
 # along with code for my bachelor's thesis.  If not, see
 # <http://www.gnu.org/licenses/>.
 
-# Requirements: Python 3 (works with 3.3), Python-dateutil, NumPy, SciPy
+# Requirements: Python 3 (works with 3.3), Python-dateutil, NumPy,
+#   SciPy
 
 
 # Data
@@ -36,7 +37,7 @@ k = 2 # Number of components in mixture
 delta_F = 0.001
 delta_theta = 0.001
 
-imageIndex = 0
+# imageIndex = 0
 precision = 3
 
 
@@ -45,41 +46,29 @@ from common.get_data import getData
 
 import numpy as np
 from math import exp, log as ln
+from random import random
 from scipy.stats import gamma # Gamma distribution
 from scipy.special import psi # Digamma function
 
+from scipy.optimize import fsolve
 from scipy.spatial.distance import euclidean
 
 x = None
-eps = None
-f = gamma.pdf
+f = lambda u, alpha, beta: gamma.pdf(u, alpha, scale = 1 / beta)
 
 k_underline = range(k)
 n_underline = range(n)
 
-m = 0 # Number of current step
-# Initial values TODO
-p_ast_m = [0.9, 0.1] # [1 / k for i in k_underline]
-alpha_ast_m =[0.2,  0.3]
-beta_ast_m = [0.0002,  0.0001]
+p = lambda theta, i: theta[i]
+alpha = lambda theta, i: theta[k + i]
+beta = lambda theta, i: theta[k * 2 + i]
 
-f_theta_m_x_i = lambda x, i: p_ast_m[i] * f(x, alpha_ast_m[i], scale = 1 / beta_ast_m[i])
-# print(f_theta_m_x_i(1, 0))
-# print(f_theta_m_x_i(1, 1))
-f_X_theta_x = lambda x: sum([f_theta_m_x_i(x, i) for i in k_underline])
-#f_theta_i_cond_x = lambda i, x: f_theta_m_x_i(x, i) / f_X_theta_x(x)
 import warnings
 warnings.filterwarnings('error')
-def f_theta_i_cond_x(i, x):
-	#print(i, x)
-	#print(f_theta_m_x_i(x, i))
-	#print(f_X_theta_x(x))
-	try:
-		return f_theta_m_x_i(x, i) / f_X_theta_x(x)
-	except:
-		print(x, i, f_theta_m_x_i(x, i),  f_X_theta_x(x))
-		raise
 
+f_X_Y = lambda u, i, theta: p(theta, i) * f(u, alpha(theta, i), beta(theta, i))
+f_X = lambda u, theta: sum([f_X_Y(u, i, theta) for i in k_underline])
+f_Y_cond_X = lambda i, u, theta: f_X_Y(u, i, theta) / f_X(u, theta)
 
 cursor = getData(tableName, startDateTime, n, precision)
 
@@ -91,42 +80,65 @@ for row in cursor:
 	# print(x)
 	print(x.mean(),  x.var())
 	
-	m = 0
+	m = 0 # Number of current step
 	print('m', m)
-	print('p_ast_m', p_ast_m)
-	print('alpha_ast_m', alpha_ast_m)
-	print('beta_ast_m', beta_ast_m)
+	
+	# Initial values TODO
+	p_m = [0.9, 0.1] # [1 / k for i in k_underline]
+	alpha_m =[0.2,  0.3]
+	beta_m = [0.0002,  0.0001]
 
+	print('p_m', p_m)
+	print('alpha_m', alpha_m)
+	print('beta_m', beta_m)
+
+	# Initial values TODO
+	s, loc, t = gamma.fit(x, loc = 0)
+	alpha_est = s
+	beta_est = 1 / t
+	print(alpha_est, loc, beta_est)
+	p_m = [0.4, 0.6]
+	alpha_m = [alpha_est ** (random() * 2) for i in k_underline]
+	beta_m = [beta_est ** (random() * 2) for i in k_underline]
+	theta_m = p_m + alpha_m + beta_m
+	print('p_m', p_m)
+	print('alpha_m', alpha_m)
+	print('beta_m', beta_m)
+	
 	while True:
-		g = [[f_theta_i_cond_x(i, x[j]) for j in n_underline] for i in k_underline]
-		g_sum = [sum([g[i][j] for j in n_underline]) for i in k_underline]
+		# Prepare for next step
+		m += 1
+		print('m', m)
+		p_m_1 = p_m
+		alpha_m_1 = alpha_m
+		beta_m_1 = beta_m
+		theta_m_1 = theta_m
 		
-		p_ast_m1 = [1 / n * g_sum[i] for i in k_underline]
-		print('p_ast_m1', p_ast_m1)
-		alpha_ast_m1 = [sum([g[i][j] * x[j] for j in n_underline]) / g_sum[i] for i in k_underline]
-		print('alpha_ast_m1', alpha_ast_m1)
-#		i = 0
-#		print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i] ))
-#		i = 1
-#		print(exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i] for i in k_underline))
-		beta_ast_m1 = [exp(psi(alpha_ast_m[i]) -  sum([g[i][j] * ln(x[j]) for j in n_underline]) / g_sum[i]) for i in k_underline]
-
-		print('beta_ast_m1', beta_ast_m1)
+		for i in k_underline:
+			Z_i = [f_Y_cond_X(i, x[j], theta_m_1) for j in n_underline]
+			A_i = sum(Z_i)
+			B_i = sum([Z_i[j] * x[j] for j in n_underline])
+			C_i = sum([Z_i[j] * ln(x[j]) for j in n_underline])
+			D_i = ln(A_i / B_i) + C_i / A_i
+			p_m[i] = 1 / n * A_i
+			assert D_i < 0
+			solve_res, full_output, ier, mesg = fsolve(lambda alpha: ln(alpha) - psi(alpha) + D_i, alpha_m_1[i], full_output = True)
+			assert ier == 1
+			alpha_m[i] = solve_res[0]
+			beta_m[i] = alpha_m[i] * A_i / B_i
+		
+		theta_m = p_m + alpha_m + beta_m
+		print('p_m', p_m)
+		print('alpha_m', alpha_m)
+		print('beta_m', beta_m)
 		
 #		# TODO
-#		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
+#		d = euclidean(p_m + alpha_m + beta_m, p_m_1 + alpha_m_1 + beta_m_1)
 #		print('d', d)
 #		if d < delta_theta:
 #			break
 		
-		d = euclidean(p_ast_m + alpha_ast_m1 + beta_ast_m1, p_ast_m1 + alpha_ast_m1 + beta_ast_m1)
+		d = euclidean(theta_m, theta_m_1)
 		print('d', d)
 		if d < delta_theta:
 			break
-		
-		# Prepare for next step
-		m += 1
-		print()
-		print('m', m)
-		alpha_ast_m = alpha_ast_m1
-		beta_ast_m = alpha_ast_m1
