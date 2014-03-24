@@ -22,7 +22,7 @@
 # <http://www.gnu.org/licenses/>.
 
 # Requirements: Python 3 (works with 3.3), Python-dateutil, MatPlotLib,
-#  Pandas
+#  Pandas, XeLaTeX, GhostScript
 
 
 # Data
@@ -31,12 +31,25 @@ tableName = 'MICEX_SBER'
 startDateTime = parse('2011-06-01T10:00')
 endDateTime = parse('2011-06-01T14:00')
 period = 'minute'
+plotSuptitle = 'Количество сделок в минуту'
+plotTitle = 'Тикер SBER, с 10:00 до 14:00 1 июня 2011 года'
 
 # Code
 from common.connect import connect
 conn = connect()
 
+import matplotlib as mpl
+mpl.use('pgf')
+mpl.rcParams.update({
+	'pgf.texsystem': 'xelatex',
+	'pgf.preamble': [r'\usepackage{unicode-math}'],
+	'text.usetex': True,
+	'text.latex.unicode': True,
+	'font.family': 'PT Serif',
+	'font.size': 14,
+})
 import matplotlib.pyplot as plt
+imageName = '{:s}.count_of_transactions.png'.format(tableName)
 import pandas as pd
 
 print('Getting data...')
@@ -57,8 +70,16 @@ df = pd.read_sql('''
 # df = df.to_period(pd.Period)
 # idx = pd.period_range(min(df.index), max(df.index), freq = 'H')
 # df = df.reindex(idx, fill_value = 0)
-df.plot()
-plt.show()
+
+# plt.clf()
+print('Plotting...')
+df.plot(legend = False) # kind = 'bar'
+plt.xlabel('')
+plt.ylabel('')
+plt.suptitle(plotSuptitle, fontsize = 14, fontweight = 'bold')
+plt.title(plotTitle, fontsize = 14, fontweight = 'bold')
+plt.savefig(imageName)
+print('Plot has been saved to {:s}.'.format(imageName))
 
 print('Done.')
 del conn
