@@ -41,3 +41,6 @@ _eric5project
 # Data
 *.CSV
 *.xls*
+
+# Results
+*.png
